@@ -6,7 +6,7 @@ Keeping the rules in one place prevents the API and worker from drifting apart.
 from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from dawg_agent.config import Settings
@@ -52,7 +52,6 @@ def publish_block_reason(
     utc_day_end = local_day_end.astimezone(timezone.utc).replace(tzinfo=None)
 
     # Count posts using UTC boundaries derived from the configured local day.
-    from sqlalchemy import func
 
     published_count = database.scalar(
         select(func.count())
