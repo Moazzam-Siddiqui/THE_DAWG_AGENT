@@ -7,67 +7,19 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.blocking import BlockingScheduler
-from sqlalchemy import func, select
 
 from dawg_agent.config import get_settings
 from dawg_agent.db import SessionLocal, init_db
-from dawg_agent.models import Post
 from dawg_agent.services.events import record_event
 from dawg_agent.services.instagram import publish_reel
+from dawg_agent.services.publishing import publish_block_reason
 from dawg_agent.services.queue import find_posts_that_are_due
 
 logger = logging.getLogger("dawg.worker")
 
 
-def is_publish_time_allowed(now: datetime, settings) -> bool:
-    """Only allow posts inside the daily time window."""
-    start_hour, start_minute = map(int, settings.publish_window_start.split(":"))
-    end_hour, end_minute = map(int, settings.publish_window_end.split(":"))
-    current_minutes = now.hour * 60 + now.minute
-    start_minutes = start_hour * 60 + start_minute
-    end_minutes = end_hour * 60 + end_minute
-    return start_minutes <= current_minutes <= end_minutes
-
-
-def has_daily_space(database, now: datetime, settings) -> bool:
-    """Check whether today's post limit has already been reached."""
-    today_count = database.scalar(
-        select(func.count())
-        .select_from(Post)
-        .where(
-            Post.status == "published",
-            func.date(Post.updated_at) == now.date().isoformat(),
-        )
-    ) or 0
-
-    if today_count >= settings.max_posts_per_day:
-        logger.warning("Today's posting limit has been reached.")
-        return False
-
-    latest_post = database.scalar(
-        select(Post)
-        .where(Post.status == "published")
-        .order_by(Post.updated_at.desc())
-        .limit(1)
-    )
-
-    if latest_post and latest_post.updated_at:
-        last_post_time = latest_post.updated_at
-        if last_post_time.tzinfo is None:
-            last_post_time = last_post_time.replace(tzinfo=ZoneInfo("UTC"))
-
-        minutes_since_last_post = (
-            datetime.now(ZoneInfo("UTC")) - last_post_time
-        ).total_seconds() / 60
-
-        if minutes_since_last_post < settings.min_post_interval_minutes:
-            return False
-
-    return True
-
-
 def publish_ready_posts() -> None:
-    """Publish posts whose scheduled time has arrived."""
+    """Publish due posts only when the shared safety policy permits it."""
     settings = get_settings()
 
     if not settings.publish_enabled:
@@ -76,18 +28,13 @@ def publish_ready_posts() -> None:
 
     with SessionLocal() as database:
         for post in find_posts_that_are_due(database):
+            local_now = datetime.now(ZoneInfo(settings.timezone))
+            block_reason = publish_block_reason(database, post, settings, local_now)
+            if block_reason:
+                logger.info("Post %s remains queued: %s", post.id, block_reason)
+                continue
+
             try:
-                local_now = datetime.now(ZoneInfo(settings.timezone))
-
-                if not is_publish_time_allowed(local_now, settings):
-                    continue
-
-                if not has_daily_space(database, local_now, settings):
-                    continue
-
-                if not post.approved or not post.media_url:
-                    continue
-
                 instagram_id = publish_reel(post.media_url, post.caption, settings)
                 post.published_media_id = instagram_id
                 post.status = "published"
@@ -103,9 +50,14 @@ def publish_ready_posts() -> None:
                 logger.info("Instagram published post %s.", post.id)
 
             except Exception as error:
+                database.rollback()
+                post = database.get(type(post), post.id)
+                if post is None:
+                    logger.exception("Post disappeared after a publishing failure.")
+                    continue
+
                 post.attempts += 1
                 post.last_error = str(error)[:2000]
-
                 if post.attempts > settings.max_retries:
                     post.status = "failed"
 
