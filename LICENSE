@@ -1,9 +1,9 @@
-THE DAWG AGENT — PERSONAL, NON-COMMERCIAL USE LICENSE
+THE DAWG AGENT — PERSONAL, NON-COMMERCIAL, NO-MODIFICATION LICENSE
 Copyright (c) 2026 Moazzam Siddiqui. All rights reserved.
 
 IMPORTANT
-This is a custom, source-available license. It is not an open-source license
-and is not an OSI-approved license.
+This is a custom, source-available licence. It is not an open-source licence
+and is not an OSI-approved licence.
 
 1. OWNERSHIP
 
@@ -11,18 +11,18 @@ The software, source code, documentation, designs, and other materials in this
 repository (the "Software") are owned by Moazzam Siddiqui ("Owner"), unless a
 file or component states otherwise. No ownership is transferred to you.
 
-2. PERMITTED PERSONAL USE
+2. LIMITED PERMITTED USE
 
 Subject to these terms, the Owner grants you a limited, revocable, non-exclusive,
-non-transferable, non-sublicensable licence to:
+non-transferable, non-sublicensable licence to download, install, and run an
+unaltered copy of the Software solely for your own personal, private,
+non-commercial purposes.
 
-- view and download the Software;
-- install and run the Software for your own personal, non-commercial purposes;
-- modify the Software for your own personal, non-commercial purposes.
-
-You may not distribute, publish, sublicense, rent, lease, sell, or otherwise
-make the Software or modified versions available to other people without the
-Owner's prior written permission.
+You may not modify, adapt, translate, alter, create derivative works from, or
+otherwise change the Software or any part of it. This prohibition includes
+changing source code, configuration, prompts, assets, workflows, or other
+project materials, except for entering ordinary runtime settings strictly
+necessary to operate an unmodified copy where the Software provides for them.
 
 3. NO COMMERCIAL USE
 
@@ -34,32 +34,39 @@ Prohibited uses include, without limitation:
 - using it to generate revenue, leads, advertising income, or other commercial
   advantage;
 - offering it as a hosted service, SaaS product, or paid or monetised platform;
-- selling, reselling, sublicensing, or distributing copies of the Software or
-  derivative works;
+- selling, reselling, sublicensing, distributing, or sharing copies of the
+  Software;
 - incorporating the Software into a commercial product or service.
 
 "Commercial purpose" includes direct or indirect financial benefit, whether
 or not money is charged directly for access to the Software.
 
-4. OWNER'S COMMERCIAL RIGHTS
+4. NO REDISTRIBUTION OR SHARING
 
-The restrictions in Section 3 apply to recipients of the Software. They do not
-limit the Owner. The Owner retains the exclusive right to commercially use,
-market, license, sell, distribute, modify, and otherwise exploit the Software,
-including offering paid licences or commercial arrangements to selected
-parties.
+You may not publish, distribute, transmit, sublicense, rent, lease, lend, or
+otherwise make the Software or copies of it available to any other person
+without the Owner's prior written permission. Public availability of this
+repository does not grant permission to redistribute it.
 
-No recipient receives those commercial rights unless the Owner grants them
-under a separate written agreement.
+5. OWNER'S RESERVED RIGHTS
 
-5. THIRD-PARTY COMPONENTS
+The restrictions in Sections 2, 3, and 4 apply to recipients of the Software.
+They do not limit the Owner. The Owner retains all rights to use, modify,
+commercially exploit, market, license, sell, distribute, and otherwise make
+the Software available, including offering commercial licences or other
+permissions to selected parties.
+
+No recipient receives modification, redistribution, or commercial rights
+unless the Owner grants those rights under a separate written agreement.
+
+6. THIRD-PARTY COMPONENTS
 
 The Software may include or depend on third-party packages, services, assets,
 or other materials. Those components are governed by their own applicable
 licences and terms. This licence does not replace or override third-party
 licences, and the Owner does not grant rights the Owner does not possess.
 
-6. NO WARRANTY
+7. NO WARRANTY
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
@@ -67,22 +74,22 @@ PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW,
 THE OWNER WILL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
 ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
 
-7. TERMINATION
+8. TERMINATION
 
 This licence terminates automatically if you breach its terms. Upon termination,
 you must stop using the Software and delete copies in your possession or
 control. Sections concerning ownership, restrictions, warranty, and liability
 survive termination.
 
-8. PERMISSION AND CONTACT
+9. PERMISSION AND CONTACT
 
-For commercial use, redistribution, sublicensing, or any use not expressly
+For modification, redistribution, commercial use, or any use not expressly
 permitted above, you must obtain prior written permission from the Owner.
 
 Unless a separate written agreement says otherwise, no permission is granted
 by silence, public availability, or publication of this repository.
 
-9. GOVERNING LAW
+10. GOVERNING LAW
 
 Any governing law, jurisdiction, or dispute-resolution terms must be agreed
 separately in writing or determined by applicable law.
