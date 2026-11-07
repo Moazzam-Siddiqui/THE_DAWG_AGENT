@@ -1,4 +1,4 @@
-THE DAWG AGENT — PERSONAL, NON-COMMERCIAL, NO-MODIFICATION LICENSE
+THE DAWG AGENT — PERSONAL, NON-COMMERCIAL, LIMITED-CUSTOMIZATION LICENSE
 Copyright (c) 2026 Moazzam Siddiqui. All rights reserved.
 
 IMPORTANT
@@ -11,18 +11,40 @@ The software, source code, documentation, designs, and other materials in this
 repository (the "Software") are owned by Moazzam Siddiqui ("Owner"), unless a
 file or component states otherwise. No ownership is transferred to you.
 
-2. LIMITED PERMITTED USE
+2. LIMITED PERMITTED USE AND CUSTOMIZATION
 
 Subject to these terms, the Owner grants you a limited, revocable, non-exclusive,
-non-transferable, non-sublicensable licence to download, install, and run an
-unaltered copy of the Software solely for your own personal, private,
-non-commercial purposes.
+non-transferable, non-sublicensable licence to download, install, and run a copy
+of the Software solely for your own personal, private, non-commercial purposes.
 
-You may not modify, adapt, translate, alter, create derivative works from, or
-otherwise change the Software or any part of it. This prohibition includes
-changing source code, configuration, prompts, assets, workflows, or other
-project materials, except for entering ordinary runtime settings strictly
-necessary to operate an unmodified copy where the Software provides for them.
+You may customize ONLY the following, and only through configuration options,
+settings, or extension points expressly provided by the Software:
+
+(a) Image-generation type: select or configure a supported image-generation
+provider, model, or generation mode.
+
+(b) Publishing type: select or configure a supported publishing provider,
+platform, destination, or publishing method.
+
+(c) Asset type: select or configure supported asset categories, sources, or
+formats used by the Software, such as image, video, or audio assets, where
+those options are provided.
+
+These permissions allow selection and configuration of existing supported
+options. They do not authorize writing or adding integrations, providers,
+models, adapters, or functionality; changing application logic; or editing
+source code to make unsupported options work.
+
+No other modification is permitted. In particular, you may not modify, adapt,
+translate, alter, or create derivative works from the source code, prompts,
+templates, workflows, business rules, scheduling logic, approval rules,
+publishing safeguards, user interface, documentation, or any other part of the
+Software, except for the three limited configuration categories expressly
+listed above.
+
+Ordinary runtime settings and credentials needed to operate the Software may
+be supplied where the Software provides for them, provided they do not change
+the Software beyond the permitted customizations in this section.
 
 3. NO COMMERCIAL USE
 
@@ -56,8 +78,9 @@ commercially exploit, market, license, sell, distribute, and otherwise make
 the Software available, including offering commercial licences or other
 permissions to selected parties.
 
-No recipient receives modification, redistribution, or commercial rights
-unless the Owner grants those rights under a separate written agreement.
+No recipient receives rights beyond the limited customization expressly
+granted in Section 2 unless the Owner grants them under a separate written
+agreement.
 
 6. THIRD-PARTY COMPONENTS
 
@@ -83,8 +106,9 @@ survive termination.
 
 9. PERMISSION AND CONTACT
 
-For modification, redistribution, commercial use, or any use not expressly
-permitted above, you must obtain prior written permission from the Owner.
+For any modification beyond the three permitted customization categories,
+redistribution, commercial use, or any use not expressly permitted above, you
+must obtain prior written permission from the Owner.
 
 Unless a separate written agreement says otherwise, no permission is granted
 by silence, public availability, or publication of this repository.
