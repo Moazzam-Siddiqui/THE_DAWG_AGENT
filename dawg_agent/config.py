@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/dawg_agent.db"
     output_dir: Path = Path("assets/rendered")
     timezone: str = "Asia/Kolkata"
+    log_level: str = "INFO"
 
     # Safety: the robot must not publish unless we switch this on.
     publish_enabled: bool = False
