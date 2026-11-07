@@ -1,107 +1,168 @@
+"""The robot's control panel.
+
+Open http://127.0.0.1:8000/docs after starting the API to try these controls.
+"""
 import secrets
 from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
 from dawg_agent.config import get_settings
 from dawg_agent.db import SessionLocal, init_db
 from dawg_agent.models import Event, Post
 from dawg_agent.schemas import EventRead, PostCreate, PostRead, ScheduleRequest
 from dawg_agent.services.events import record_event
-from dawg_agent.services.queue import (QueueError, approve_post, create_post, render_post,
-    schedule_post, upload_post)
+from dawg_agent.services.queue import (
+    QueueError,
+    approve_post,
+    create_post,
+    render_post,
+    schedule_post,
+    upload_post,
+)
+
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(_app: FastAPI):
+    """Prepare the database when the API starts."""
     init_db()
     yield
 
-app = FastAPI(title="THE DAWG AGENT", version="0.1.0", lifespan=lifespan)
 
-def get_db():
-    db = SessionLocal()
+app = FastAPI(
+    title="THE DAWG AGENT",
+    description="A small control panel for making and managing dog Reels.",
+    version="0.2.0",
+    lifespan=lifespan,
+)
+
+
+def get_database():
+    """Give one API request a database connection."""
+    database = SessionLocal()
     try:
-        yield db
+        yield database
     finally:
-        db.close()
+        database.close()
+
 
 def check_api_key(x_api_key: str | None = Header(default=None)):
-    expected = get_settings().api_key
-    if expected and not secrets.compare_digest(x_api_key or "", expected):
-        raise HTTPException(status_code=401, detail="Invalid API key.")
+    """Check the optional API password."""
+    saved_key = get_settings().api_key
+    if saved_key and not secrets.compare_digest(x_api_key or "", saved_key):
+        raise HTTPException(status_code=401, detail="The API key is not correct.")
 
-def get_post(db: Session, post_id: str) -> Post:
-    post = db.get(Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found.")
+
+def find_post_or_error(database: Session, post_id: str) -> Post:
+    """Find a post, or tell the user it does not exist."""
+    post = database.get(Post, post_id)
+    if post is None:
+        raise HTTPException(status_code=404, detail="I could not find that post.")
     return post
 
-@app.get("/health")
+
+@app.get("/health", summary="Is the robot awake?")
 def health():
-    cfg = get_settings()
-    return {"status": "ok", "publishing_enabled": cfg.publish_enabled,
-        "instagram_configured": cfg.instagram_configured,
-        "cloudinary_configured": cfg.cloudinary_configured}
+    settings = get_settings()
+    return {
+        "status": "awake",
+        "publishing_is_on": settings.publish_enabled,
+        "instagram_details_are_ready": settings.instagram_is_ready,
+    }
+
 
 @app.get("/posts", response_model=list[PostRead], dependencies=[Depends(check_api_key)])
-def list_posts(db: Session = Depends(get_db)):
-    return list(db.scalars(select(Post).order_by(Post.created_at.desc())).all())
+def list_posts(database: Session = Depends(get_database)):
+    """Show all posts, newest first."""
+    query = select(Post).order_by(Post.created_at.desc())
+    return list(database.scalars(query).all())
 
-@app.post("/posts", response_model=PostRead, status_code=201, dependencies=[Depends(check_api_key)])
-def add_post(payload: PostCreate, db: Session = Depends(get_db)):
+
+@app.post("/posts", response_model=PostRead, status_code=201,
+          dependencies=[Depends(check_api_key)])
+def add_post(details: PostCreate, database: Session = Depends(get_database)):
+    """Add a new post to the waiting list."""
     try:
-        return create_post(db, payload)
-    except QueueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return create_post(database, details)
+    except QueueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
-@app.post("/posts/{post_id}/approve", response_model=PostRead, dependencies=[Depends(check_api_key)])
-def approve(post_id: str, db: Session = Depends(get_db)):
+
+@app.post("/posts/{post_id}/approve", response_model=PostRead,
+          dependencies=[Depends(check_api_key)])
+def approve(post_id: str, database: Session = Depends(get_database)):
+    """Tell the robot that a person has checked and approved this post."""
     try:
-        return approve_post(db, get_post(db, post_id))
-    except QueueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return approve_post(database, find_post_or_error(database, post_id))
+    except QueueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
-@app.post("/posts/{post_id}/render", response_model=PostRead, dependencies=[Depends(check_api_key)])
-def render(post_id: str, db: Session = Depends(get_db)):
+
+@app.post("/posts/{post_id}/render", response_model=PostRead,
+          dependencies=[Depends(check_api_key)])
+def render(post_id: str, database: Session = Depends(get_database)):
+    """Make an MP4 video from the post's picture."""
     try:
-        return render_post(db, get_post(db, post_id), get_settings())
-    except (QueueError, RuntimeError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return render_post(database, find_post_or_error(database, post_id), get_settings())
+    except (QueueError, RuntimeError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
-@app.post("/posts/{post_id}/upload", response_model=PostRead, dependencies=[Depends(check_api_key)])
-def upload(post_id: str, db: Session = Depends(get_db)):
+
+@app.post("/posts/{post_id}/upload", response_model=PostRead,
+          dependencies=[Depends(check_api_key)])
+def upload(post_id: str, database: Session = Depends(get_database)):
+    """Upload the finished MP4 to Cloudinary."""
     try:
-        return upload_post(db, get_post(db, post_id), get_settings())
-    except (QueueError, RuntimeError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return upload_post(database, find_post_or_error(database, post_id), get_settings())
+    except (QueueError, RuntimeError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
-@app.post("/posts/{post_id}/schedule", response_model=PostRead, dependencies=[Depends(check_api_key)])
-def schedule(post_id: str, payload: ScheduleRequest, db: Session = Depends(get_db)):
+
+@app.post("/posts/{post_id}/schedule", response_model=PostRead,
+          dependencies=[Depends(check_api_key)])
+def schedule(post_id: str, details: ScheduleRequest,
+             database: Session = Depends(get_database)):
+    """Choose when an uploaded post should go live."""
     try:
-        return schedule_post(db, get_post(db, post_id), payload.scheduled_at)
-    except QueueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return schedule_post(
+            database,
+            find_post_or_error(database, post_id),
+            details.scheduled_at,
+        )
+    except QueueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
-@app.post("/posts/{post_id}/publish", response_model=PostRead, dependencies=[Depends(check_api_key)])
-def publish_now(post_id: str, db: Session = Depends(get_db)):
+
+@app.post("/posts/{post_id}/publish", response_model=PostRead,
+          dependencies=[Depends(check_api_key)])
+def publish_now(post_id: str, database: Session = Depends(get_database)):
+    """Publish now. This only works when the publishing safety switch is ON."""
     from dawg_agent.services.instagram import publish_reel
-    cfg = get_settings()
-    if not cfg.publish_enabled:
-        raise HTTPException(status_code=403, detail="Publishing safety lock is disabled.")
-    post = get_post(db, post_id)
+
+    settings = get_settings()
+    if not settings.publish_enabled:
+        raise HTTPException(status_code=403, detail="Publishing is switched OFF.")
+    post = find_post_or_error(database, post_id)
     if not post.approved or not post.media_url:
-        raise HTTPException(status_code=409, detail="Post must be approved and uploaded.")
+        raise HTTPException(status_code=409, detail="Approve and upload this post first.")
+
     try:
-        media_id = publish_reel(post.media_url, post.caption, cfg)
-        post.published_media_id, post.status = media_id, "published"
-        db.commit()
-        record_event(db, "post.published", post.id, instagram_media_id=media_id)
-        db.refresh(post)
+        instagram_id = publish_reel(post.media_url, post.caption, settings)
+        post.published_media_id = instagram_id
+        post.status = "published"
+        database.commit()
+        record_event(database, "post.published", post.id, instagram_media_id=instagram_id)
+        database.refresh(post)
         return post
-    except RuntimeError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
 
 @app.get("/events", response_model=list[EventRead], dependencies=[Depends(check_api_key)])
-def events(db: Session = Depends(get_db), limit: int = 100):
-    limit = max(1, min(limit, 500))
-    return list(db.scalars(select(Event).order_by(Event.created_at.desc()).limit(limit)).all())
+def show_events(database: Session = Depends(get_database), limit: int = 100):
+    """Show the robot's activity diary."""
+    safe_limit = max(1, min(limit, 500))
+    query = select(Event).order_by(Event.created_at.desc()).limit(safe_limit)
+    return list(database.scalars(query).all())
