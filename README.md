@@ -6,6 +6,8 @@ THE DAWG AGENT currently turns a supplied image into a short vertical MP4 previe
 
 > **Project status:** Early development. AI image generation and automatic prompt generation are not connected. External publishing integrations require credentials and end-to-end verification. Publishing is OFF by default.
 
+> **License:** This repository is source-available under a custom **Personal, Non-Commercial Use License**. You may use and modify it for your own personal, non-commercial purposes only. Commercial use, resale, redistribution, and sublicensing are not permitted without written permission. The copyright owner retains the right to sell and commercially license the software. See [LICENSE](LICENSE).
+
 ## Start here
 
 New to the project? Follow the guides in this order:
@@ -102,4 +104,4 @@ python -m pytest
 
 ## License
 
-See [LICENSE](LICENSE).
+This project is **not open source**. It is source-available for personal, non-commercial use only. The owner reserves all commercial rights, including the right to sell commercial licences. Read the full [LICENSE](LICENSE) before using, copying, modifying, or distributing the Software.
