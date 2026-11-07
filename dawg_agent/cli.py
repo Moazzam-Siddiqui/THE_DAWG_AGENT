@@ -9,7 +9,8 @@ from dawg_agent.config import get_settings
 from dawg_agent.db import SessionLocal, init_db
 from dawg_agent.models import Post
 from dawg_agent.schemas import PostCreate
-from dawg_agent.services.queue import approve_post, create_post, render_post
+from dawg_agent.services.queue import approve_post, create_post
+from dawg_agent.services.render import render_reel
 
 app = typer.Typer(help="Simple commands for THE DAWG AGENT.")
 
@@ -52,21 +53,21 @@ def approve(post_id: str):
 
 @app.command()
 def render(file_path: Path):
-    """Make a local video preview from a JSON post file."""
-    init_db()
+    """Render a local preview without creating or approving a queue item."""
     post_details = read_post_file(file_path)
+    settings = get_settings()
+    output_path = settings.output_dir / f"{post_details.id}.mp4"
 
-    with SessionLocal() as database:
-        post = database.get(Post, post_details.id)
+    audio_path = post_details.audio_path or settings.audio_source_path
+    render_reel(
+        image_path=post_details.image_path,
+        output_path=output_path,
+        duration=post_details.duration_seconds,
+        settings=settings,
+        audio_path=audio_path,
+    )
 
-        if post is None:
-            post = create_post(database, post_details)
-
-        if not post.approved:
-            approve_post(database, post)
-
-        finished_post = render_post(database, post, get_settings())
-        print(f"[green]Video saved to:[/green] {finished_post.video_path}")
+    print(f"[green]Video preview saved to:[/green] {output_path}")
 
 
 @app.command()
