@@ -1,57 +1,105 @@
 # THE DAWG AGENT 🐶
 
-**A simple robot that helps make dog videos and prepare them for Instagram.**
+**An approval-gated dog-video production and Instagram workflow, built to be understandable and safe to extend.**
 
-Imagine you have a little helper:
-1. You give it a dog picture.
-2. It turns that picture into a short vertical video.
-3. It checks that the video is okay.
-4. It sends the video to Cloudinary, which gives us a link.
-5. It can publish the video to Instagram when we turn that feature on.
+THE DAWG AGENT currently turns a supplied image into a short vertical MP4 preview. It also contains a database-backed post queue, an API, Cloudinary upload code, an Instagram publishing adapter, and a scheduler worker.
 
-That is what this project is for.
-
-> **Important:** The robot is not running on the internet yet. This repository contains its code. Publishing is OFF by default, so it cannot accidentally post anything.
+> **Project status:** Early development. AI image generation and automatic prompt generation are not connected. External publishing integrations require credentials and end-to-end verification. Publishing is OFF by default.
 
 ## Start here
 
-If you are new to this project, read these in order:
+New to the project? Follow the guides in this order:
 
-1. [Start here: run the project](docs/START_HERE.md)
-2. [How the robot works](docs/HOW_IT_WORKS.md)
-3. [How to add a dog post](docs/ADD_A_POST.md)
-4. [Customize prompts, post types, and audio](docs/CUSTOMIZE_PROMPTS.md)
-5. [What each folder does](docs/PROJECT_MAP.md)
-6. [Fix common problems](docs/TROUBLESHOOTING.md)
+1. **[Install and run the project](docs/START_HERE.md)** — Python, FFmpeg installation, PATH verification, virtual environment, dependencies, first preview.
+2. [How the agent works](docs/HOW_IT_WORKS.md) — architecture, queue, API, worker, and current limitations.
+3. [Add a post](docs/ADD_A_POST.md) — create JSON input and render a local preview.
+4. [Customize prompts, post types, and audio](docs/CUSTOMIZE_PROMPTS.md) — creative guidance and honest feature status.
+5. [Project map](docs/PROJECT_MAP.md) — where each component lives.
+6. [Troubleshooting](docs/TROUBLESHOOTING.md) — common Windows, Python, FFmpeg, and API errors.
 
-## What can it do today?
+## Requirements
 
-| Part | What it does |
+- Python 3.11+
+- FFmpeg and FFprobe installed and available on PATH
+- Windows 10/11, macOS, or Linux
+- Git recommended
+
+## Quick start
+
+Follow the full [installation guide](docs/START_HERE.md). The short version:
+
+```bash
+git clone https://github.com/Moazzam-Siddiqui/THE_DAWG_AGENT.git
+cd THE_DAWG_AGENT
+python -m venv .venv
+```
+
+Activate the environment:
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+```
+
+Install the package:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+Check FFmpeg before rendering:
+
+```bash
+ffmpeg -version
+ffprobe -version
+```
+
+## What is implemented?
+
+| Component | Current state |
 |---|---|
-| Post queue | Remembers which dog posts we want to make |
-| Video maker | Turns one picture into a 9:16 MP4 video |
-| Video checker | Checks that the video was created correctly |
-| Cloudinary | Uploads videos and gives us public links |
-| Instagram connector | Talks to Instagram's official publishing API |
-| Scheduler | Looks for posts that are ready to publish |
-| API | Lets another program control the robot |
+| Local image-to-video rendering | Implemented; needs continued runtime testing |
+| Video file validation | Basic checks implemented |
+| Post queue and database | Implemented |
+| FastAPI control API | Implemented |
+| Cloudinary upload adapter | Code present; credentials and live upload not verified |
+| Instagram Graph API adapter | Code present; credentials and live publishing not verified |
+| Scheduler worker | Code present; scheduling/rate-limit hardening still required |
+| AI prompt generation | Not connected |
+| AI image generation | Not connected |
+| Multi-track audio editing | Not implemented |
+| Web dashboard | Not implemented |
+| Deployment | Not configured |
 
-## What does it need?
+## Safety defaults
 
-- Python 3.11 or newer
-- FFmpeg (a tool that makes videos)
-- A Cloudinary account and upload preset
-- Instagram professional account + Meta API access, only when we are ready to publish
+- `PUBLISH_ENABLED=false`
+- `REQUIRE_APPROVAL=true`
+- Default daily publishing limit: 3
+- Default minimum publishing interval: 180 minutes
+- Default publishing window: 07:00–22:00 Asia/Kolkata
 
-## Safety rules
+These are configuration defaults, not a claim that live publishing has been fully safety-tested. Keep publishing disabled until the integration and worker safeguards have been verified.
 
-- Instagram publishing starts **OFF**.
-- A post must be approved before it can move forward.
-- The default limit is 3 posts per day.
-- The default gap between posts is 3 hours.
-- Posts are allowed only between 7 AM and 10 PM India time.
-- Never put passwords or access tokens in GitHub.
+## Development checks
 
-## Project status
+```bash
+python -m pytest
+```
 
-This is an early version. The code has been added, but it still needs to be run and tested in a real environment. It is not deployed and it does not publish by itself yet.
+## Security
+
+- Keep secrets in your local `.env` file or a secure deployment secret store.
+- Never commit `.env`, access tokens, API keys, or passwords.
+- Do not expose the development API publicly.
+- Do not enable live publishing until the safety checks are complete.
+
+## License
+
+See [LICENSE](LICENSE).
