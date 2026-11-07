@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     scheduler_poll_seconds: int = Field(default=30, ge=5)
     max_retries: int = Field(default=3, ge=0, le=10)
 
+    ffmpeg_binary: str = "ffmpeg"
     video_width: int = 1080
     video_height: int = 1920
     video_fps: int = 30
