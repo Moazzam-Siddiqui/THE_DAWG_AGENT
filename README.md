@@ -1,107 +1,133 @@
 # THE DAWG AGENT 🐶
 
-**An approval-gated dog-video production and Instagram workflow, built to be understandable and safe to extend.**
+**A Windows-first, local production agent that turns ChatGPT-generated dog images into Instagram Reels.**
 
-THE DAWG AGENT currently turns a supplied image into a short vertical MP4 preview. It also contains a database-backed post queue, an API, Cloudinary upload code, an Instagram publishing adapter, and a scheduler worker.
+ChatGPT remains the image generator. Google Drive for desktop is the handoff folder. The local agent renders and validates videos with FFmpeg, adds the supplied campaign audio, stores everything on disk, and publishes directly to Instagram through Meta's resumable upload API. No Cloudinary or external video CDN is used.
 
-> **Project status:** Early development. AI image generation and automatic prompt generation are not connected. External publishing integrations require credentials and end-to-end verification. Publishing is OFF by default.
+> **Important handoff limitation:** ChatGPT image generation does not automatically write files into your Google Drive from this repository. Save each generated image into the Drive-synced `01_INCOMING_IMAGES` folder. The local agent takes over from there. Do not substitute another image generator.
 
-> **License:** This repository is source-available under a custom **Personal, Non-Commercial, Limited-Customization License**. You may use it privately and non-commercially, and may only configure the supported image-generation type, publishing type/provider, and asset type/source/format. No other code, prompt, workflow, or feature modifications are permitted. Redistribution and commercial use are prohibited without written permission. The copyright owner retains all commercial rights. See [LICENSE](LICENSE).
+> **Project status:** Local intake, rendering, queueing and direct-upload code are being built. Instagram publishing still requires a correctly configured Meta app/account and a live end-to-end verification. Publishing is OFF by default.
 
-## Start here
+> **License:** Personal, non-commercial, limited customization. See [LICENSE](LICENSE).
 
-New to the project? Follow the guides in this order:
+## The pipeline
 
-1. **[Install and run the project](docs/START_HERE.md)** — Python, FFmpeg installation, PATH verification, virtual environment, dependencies, first preview.
-2. [How the agent works](docs/HOW_IT_WORKS.md) — architecture, queue, API, worker, and current limitations.
-3. [Add a post](docs/ADD_A_POST.md) — create JSON input and render a local preview.
-4. [Customize prompts, post types, and audio](docs/CUSTOMIZE_PROMPTS.md) — creative guidance and honest feature status.
-5. [Project map](docs/PROJECT_MAP.md) — where each component lives.
-6. [Troubleshooting](docs/TROUBLESHOOTING.md) — common Windows, Python, FFmpeg, and API errors.
-
-## Requirements
-
-- Python 3.11+
-- FFmpeg and FFprobe installed and available on PATH
-- Windows 10/11, macOS, or Linux
-- Git recommended
-
-## Quick start
-
-Follow the full [installation guide](docs/START_HERE.md). The short version:
-
-```bash
-git clone https://github.com/Moazzam-Siddiqui/THE_DAWG_AGENT.git
-cd THE_DAWG_AGENT
-python -m venv .venv
+```text
+ChatGPT image generation
+        |
+        v
+Google Drive for desktop (synced folder)
+        |
+        v
+Windows morning task
+        |
+        v
+Local Python agent + SQLite
+        |
+        +--> FFmpeg vertical Reel + supplied audio
+        |
+        +--> Local video validation
+        |
+        v
+Daily publishing queue
+        |
+        v
+Meta Instagram resumable upload (local MP4 bytes)
+        |
+        v
+Instagram Reel
 ```
 
-Activate the environment:
+## What is local
+
+- Images, source audio, rendered MP4s, SQLite database, queue and logs stay on your PC / Google Drive sync.
+- FFmpeg handles video rendering.
+- Meta's resumable upload flow sends the local MP4 directly to Instagram; no public CDN URL is required.
+- Google Drive for desktop performs folder synchronization. This project does not call the Google Drive API.
+
+## Windows setup
+
+1. Install Python 3.11+, Git, FFmpeg and Google Drive for desktop.
+2. Clone the repository and install it:
 
 ```powershell
-# Windows PowerShell
+git clone https://github.com/Moazzam-Siddiqui/THE_DAWG_AGENT.git
+cd THE_DAWG_AGENT
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-```bash
-# macOS / Linux
-source .venv/bin/activate
-```
-
-Install the package:
-
-```bash
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+Copy-Item .env.example .env
 ```
 
-Check FFmpeg before rendering:
+3. In Google Drive for desktop, choose a local synced folder, for example:
+   `G:\My Drive\THE_DAWG_CAMPAIGN\01_INCOMING_IMAGES`.
+4. Set `DRIVE_INBOX_DIR`, `DRIVE_PROCESSED_DIR`, and `DRIVE_FAILED_DIR` in `.env` to folders inside that synced Drive directory.
+5. Put your user-supplied "What da dog doin" audio at `assets/audio/what_da_dog_doing.mp3`, or change `AUDIO_SOURCE_PATH`.
+6. Configure the Meta Instagram professional account and access token (see below). Keep publishing disabled while testing.
 
-```bash
+## Daily operation
+
+Save ChatGPT-generated images into the Drive-synced incoming folder. Then run:
+
+```powershell
+dawg morning
+```
+
+This imports new images, checks for the required audio, renders a 9:16 MP4, validates it, and schedules up to the daily cap. Files without a slot remain in the incoming folder for a later run. Processed and failed images are moved into their corresponding Drive folders.
+
+Start the publisher:
+
+```powershell
+dawg worker
+```
+
+Or use the combined command:
+
+```powershell
+dawg run
+```
+
+The included `scripts\run_morning.bat` is intended for Windows Task Scheduler. It runs the morning intake and keeps the scheduler alive. See [docs/WINDOWS_AUTOMATION.md](docs/WINDOWS_AUTOMATION.md).
+
+## Instagram setup
+
+The local-file resumable upload flow uses Meta's Instagram Graph API. Configure:
+
+- `INSTAGRAM_USER_ID`
+- `META_ACCESS_TOKEN`
+- `META_GRAPH_VERSION`
+
+Meta's documented resumable upload route requires an app configured for **Facebook Login for Business** and the appropriate Instagram publishing permissions. A professional Instagram account and the required Page/app setup are also necessary. This is not an Instagram password login and does not bypass Meta permissions.
+
+The code creates a Reel container, uploads the local MP4 bytes to the returned Meta upload URI, waits for processing to finish, and then publishes the container. This flow has not yet been live-tested against your account.
+
+## Automatic publishing and safety
+
+- `REQUIRE_APPROVAL=false`: successfully rendered Drive intake is automatically approved.
+- `PUBLISH_ENABLED=false`: hard stop until you deliberately enable publishing after Meta setup.
+- Default cap: 3 posts per local day.
+- Default spacing: at least 180 minutes between published posts.
+- Publishing window: 07:00–22:00 Asia/Kolkata.
+- Only rendered, scheduled posts can reach the publishing worker.
+
+Do not turn publishing on until the Meta app and account have been configured and a controlled test has succeeded. The local machine must be awake, online, signed in, and able to access the Drive-synced folder at the scheduled times.
+
+## Checks
+
+```powershell
 ffmpeg -version
 ffprobe -version
-```
-
-## What is implemented?
-
-| Component | Current state |
-|---|---|
-| Local image-to-video rendering | Implemented; needs continued runtime testing |
-| Video file validation | Basic checks implemented |
-| Post queue and database | Implemented |
-| FastAPI control API | Implemented |
-| Cloudinary upload adapter | Code present; credentials and live upload not verified |
-| Instagram Graph API adapter | Code present; credentials and live publishing not verified |
-| Scheduler worker | Code present; scheduling/rate-limit hardening still required |
-| AI prompt generation | Not connected |
-| AI image generation | Not connected |
-| Multi-track audio editing | Not implemented |
-| Web dashboard | Not implemented |
-| Deployment | Not configured |
-
-## Safety defaults
-
-- `PUBLISH_ENABLED=false`
-- `REQUIRE_APPROVAL=true`
-- Default daily publishing limit: 3
-- Default minimum publishing interval: 180 minutes
-- Default publishing window: 07:00–22:00 Asia/Kolkata
-
-These are configuration defaults, not a claim that live publishing has been fully safety-tested. Keep publishing disabled until the integration and worker safeguards have been verified.
-
-## Development checks
-
-```bash
+dawg --help
 python -m pytest
 ```
 
-## Security
+## Current limitations
 
-- Keep secrets in your local `.env` file or a secure deployment secret store.
-- Never commit `.env`, access tokens, API keys, or passwords.
-- Do not expose the development API publicly.
-- Do not enable live publishing until the safety checks are complete.
+- ChatGPT image generation is not callable automatically from this local repository. The image-to-Drive handoff is currently saving the generated image into the synced incoming folder.
+- Caption generation is currently a configured template, not an LLM-generated roast writer.
+- The agent does not verify that an audio file is the exact campaign sound; it checks that the configured audio file exists and is included.
+- The Meta resumable upload flow requires Facebook Login for Business; account/app permissions and live publication remain to be verified.
+- No production-grade cross-process publish lock or guaranteed duplicate recovery yet. Run one worker instance only.
 
-## License
-
-This project is **not open source**. It is source-available for personal, non-commercial use with only three permitted customization categories: selecting/configuring a supported image-generation type, publishing type/provider, and asset type/source/format. All other modifications—including source-code, prompt, workflow, logic, and feature changes—are prohibited without prior written permission. Redistribution, sharing, resale, and commercial use are also prohibited. The owner reserves all commercial rights. Read the full [LICENSE](LICENSE) before using it.
+See [How it works](docs/HOW_IT_WORKS.md) and [Windows automation](docs/WINDOWS_AUTOMATION.md).
