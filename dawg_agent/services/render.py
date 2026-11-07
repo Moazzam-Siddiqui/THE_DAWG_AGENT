@@ -103,7 +103,11 @@ def render_reel(
     ]
 
     sound_file = Path(audio_path) if audio_path else None
-    sound_is_ready = bool(sound_file and sound_file.is_file())
+
+    if sound_file is not None and not sound_file.is_file():
+        raise RenderError(f"The selected audio file does not exist: {sound_file}")
+
+    sound_is_ready = sound_file is not None
 
     if sound_is_ready:
         command.extend(["-stream_loop", "-1", "-i", str(sound_file)])
