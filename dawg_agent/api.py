@@ -21,7 +21,6 @@ from dawg_agent.services.queue import (
     create_post,
     render_post,
     schedule_post,
-    upload_post,
 )
 
 
@@ -111,16 +110,6 @@ def render(post_id: str, database: Session = Depends(get_database)):
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
-@app.post("/posts/{post_id}/upload", response_model=PostRead,
-          dependencies=[Depends(check_api_key)])
-def upload(post_id: str, database: Session = Depends(get_database)):
-    """Upload the finished MP4 to Cloudinary."""
-    try:
-        return upload_post(database, find_post_or_error(database, post_id), get_settings())
-    except (QueueError, RuntimeError) as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-
-
 @app.post("/posts/{post_id}/schedule", response_model=PostRead,
           dependencies=[Depends(check_api_key)])
 def schedule(post_id: str, details: ScheduleRequest,
@@ -150,7 +139,7 @@ def publish_now(post_id: str, database: Session = Depends(get_database)):
         raise HTTPException(status_code=status_code, detail=block_reason)
 
     try:
-        instagram_id = publish_reel(post.media_url, post.caption, settings)
+        instagram_id = publish_reel(post.video_path, post.caption, settings)
         post.published_media_id = instagram_id
         post.status = "published"
         post.last_error = None
