@@ -1,97 +1,59 @@
 # How THE DAWG AGENT works
 
-THE DAWG AGENT is currently an early-stage, approval-gated media workflow. It has a local image-to-video renderer, a database-backed post queue, an API, Cloudinary upload code, an Instagram publishing adapter, and a scheduler worker. Some integrations still require credentials and real-environment verification.
+## The mental model
 
-## The intended production journey
+**ChatGPT makes the image → Drive hands it over → your PC makes the Reel → Instagram publishes it.**
 
-```text
-CREATIVE BRIEF
-     |
-     v
-IMAGE + AUDIO ASSETS
-     |
-     v
-POST DRAFT / QUEUE
-     |
-     v
-HUMAN APPROVAL
-     |
-     v
-VIDEO RENDER + VALIDATION
-     |
-     v
-CLOUDINARY UPLOAD
-     |
-     v
-SCHEDULED QUEUE
-     |
-     v
-INSTAGRAM PUBLISHING
-     |
-     v
-EVENT LOG / MONITORING
-```
+ChatGPT remains the only image generator in this campaign. This repository does not call an image-generation API or local image model.
 
-**Important distinction:** AI image generation and automatic prompt generation are not connected in the current code. The current renderer starts with an image file supplied by a person.
+## Pipeline
 
-## What each part does
+1. Save a ChatGPT-generated image into the Google Drive for desktop synced incoming folder.
+2. The morning command finds supported JPG, JPEG, PNG and WebP images.
+3. It creates a stable content hash, preventing the same image from being ingested twice.
+4. FFmpeg renders a 1080×1920 vertical MP4 and adds the configured campaign audio.
+5. The renderer checks that the video exists, has the expected dimensions, and contains audio.
+6. SQLite records the post and scheduled time.
+7. The worker uploads the local MP4 bytes directly to Meta using Instagram's resumable upload flow.
+8. The worker waits for Instagram processing and publishes only after Meta reports FINISHED.
+9. Events and failures are recorded locally.
 
-| Part | File | Responsibility |
-|---|---|---|
-| Settings | `config.py` | Reads environment variables and safe defaults |
-| Database | `db.py`, `models.py` | Stores posts and events |
-| Input validation | `schemas.py` | Checks incoming post/API data |
-| Queue | `services/queue.py` | Creates posts and moves them through workflow states |
-| Rendering | `services/render.py` | Uses FFmpeg to make and inspect a vertical MP4 |
-| Cloud storage | `services/cloudinary.py` | Uploads a rendered MP4 and returns its URL |
-| Instagram | `services/instagram.py` | Calls the Meta Graph API to create and publish a Reel |
-| API | `api.py` | Provides HTTP endpoints to control the workflow |
-| CLI | `cli.py` | Provides terminal commands |
-| Worker | `worker.py` | Checks scheduled posts and attempts publication |
-| Publishing policy | `services/publishing.py` | Applies the same approval, time-window, daily-limit, and interval rules to API and worker publishing |
-| Events | `services/events.py` | Records workflow events |
+## Local folders
 
-## Queue states
-
-| Status | Meaning |
+| Folder | Purpose |
 |---|---|
-| `draft` | Post details have been saved |
-| `approved` | A person approved the post |
-| `rendered` | An MP4 was created |
-| `uploaded` | The MP4 has a Cloudinary URL |
-| `scheduled` | A future publishing time has been saved |
-| `published` | Instagram returned a media ID |
-| `failed` | The worker exhausted its configured retries |
+| Google Drive `01_INCOMING_IMAGES` | Drop ChatGPT-generated images here |
+| Google Drive `04_PROCESSED_IMAGES` | Source images already ingested |
+| Google Drive `05_FAILED_IMAGES` | Source images that failed processing |
+| `assets/rendered` | Finished local MP4 files |
+| `data/dawg_agent.db` | Local SQLite queue and event log |
+| `assets/audio` | User-supplied campaign audio |
 
-The local `dawg render` command is a preview shortcut. It does not create or approve a queue record. Queue operations are separate.
+Google Drive for desktop is the sync mechanism. The Python agent reads the synced local folder; no Google Drive API or Cloudinary account is used.
 
-## API and worker
+## Commands
 
-Start the API from the repository root with:
+- `dawg morning`: ingest Drive images, render, validate and schedule.
+- `dawg worker`: keep the Instagram publishing worker running.
+- `dawg run`: run morning intake once, then start the worker.
+- `dawg render post.json`: render one local preview.
 
-```bash
-uvicorn dawg_agent.api:app --reload
-```
+## Direct Instagram upload
 
-Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to inspect the available endpoints.
+The Instagram adapter uses Meta's resumable upload flow. It creates a Reel container, uploads the local MP4 to the returned Meta upload URI, polls the container status, and publishes it. This avoids a public CDN/video URL.
 
-Start the scheduler in a second terminal:
+Meta resumable upload has a specific app-login requirement: Facebook Login for Business. The Meta app, Instagram professional account, Page linkage, access token and publishing permissions must be configured before this can work. No live account test has been performed yet.
 
-```bash
-dawg worker
-```
+## Automatic mode
 
-The worker checks for due scheduled posts. It will not publish while `PUBLISH_ENABLED=false`.
+The Drive intake marks a post approved after it passes local validation. This is the requested automatic mode. Publishing itself remains globally disabled until `PUBLISH_ENABLED=true` is set deliberately.
 
-## Safety and current limitations
+Default limits: 3 posts/day, 180-minute minimum interval, 07:00–22:00 Asia/Kolkata. Only one worker instance should run because atomic cross-process claiming and guaranteed duplicate-publish recovery are not yet implemented.
 
-- Publishing is disabled by default.
-- Human approval is required by default for queue rendering and upload.
-- A local preview is not an approval to publish.
-- The API and worker share the same publishing policy for approval, allowed time window, daily limit, and minimum interval.
-- The current policy uses a post's `updated_at` timestamp as its publication-time record; a dedicated `published_at` field and database migration are still desirable before production use.
-- The API key is optional in local development. Configure `API_KEY` and use HTTPS/authenticated infrastructure before exposing the API beyond localhost.
-- The policy is not yet concurrency-safe across multiple API processes or worker instances. Keep publishing disabled until atomic claim/locking and duplicate-publish recovery are implemented and tested.
-- AI prompt generation, image generation, multi-track audio mixing, a visual dashboard, and deployment automation are not implemented yet.
+## Honest limitations
 
-Treat this as an engineering project under active development, not a production autopublisher.
+- ChatGPT does not automatically save images into Drive through this repository. The image must be saved into the synced incoming folder.
+- Captions are currently a fixed configurable caption and hashtags, not AI-generated roasts.
+- Audio is included from a configured local file; the program cannot independently identify or verify that it is the exact "What da dog doin" recording.
+- Instagram publishing needs a live controlled test with your Meta app/account.
+- The local PC must stay awake, online and signed in for scheduled work.
