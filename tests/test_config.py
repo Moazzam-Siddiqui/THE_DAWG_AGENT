@@ -1,9 +1,15 @@
+"""Check that the robot starts with safe settings."""
 from dawg_agent.config import Settings
 
-def test_publish_disabled_by_default():
-    assert Settings().publish_enabled is False
 
-def test_default_rate_controls_are_conservative():
-    cfg = Settings()
-    assert cfg.max_posts_per_day == 3
-    assert cfg.min_post_interval_minutes >= 15
+def test_publishing_is_off_when_the_robot_is_new():
+    settings = Settings()
+
+    assert settings.publish_enabled is False
+
+
+def test_robot_starts_with_a_small_daily_post_limit():
+    settings = Settings()
+
+    assert settings.max_posts_per_day == 3
+    assert settings.min_post_interval_minutes == 180
