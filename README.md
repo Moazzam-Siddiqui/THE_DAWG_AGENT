@@ -6,7 +6,7 @@ THE DAWG AGENT currently turns a supplied image into a short vertical MP4 previe
 
 > **Project status:** Early development. AI image generation and automatic prompt generation are not connected. External publishing integrations require credentials and end-to-end verification. Publishing is OFF by default.
 
-> **License:** This repository is source-available under a custom **Personal, Non-Commercial, No-Modification License**. You may download, install, and run an unaltered copy for your own private, non-commercial use only. You may not modify, redistribute, share, resell, or use it commercially without written permission. The copyright owner retains all rights to modify, distribute, sell, and commercially license the software. See [LICENSE](LICENSE).
+> **License:** This repository is source-available under a custom **Personal, Non-Commercial, Limited-Customization License**. You may use it privately and non-commercially, and may only configure the supported image-generation type, publishing type/provider, and asset type/source/format. No other code, prompt, workflow, or feature modifications are permitted. Redistribution and commercial use are prohibited without written permission. The copyright owner retains all commercial rights. See [LICENSE](LICENSE).
 
 ## Start here
 
@@ -104,4 +104,4 @@ python -m pytest
 
 ## License
 
-This project is **not open source**. It is source-available for personal, non-commercial use of an unmodified copy only. Modification, redistribution, sharing, resale, and commercial use are prohibited without prior written permission. The owner reserves all rights to modify, distribute, sell, and commercially license the Software. Read the full [LICENSE](LICENSE) before using it.
+This project is **not open source**. It is source-available for personal, non-commercial use with only three permitted customization categories: selecting/configuring a supported image-generation type, publishing type/provider, and asset type/source/format. All other modifications—including source-code, prompt, workflow, logic, and feature changes—are prohibited without prior written permission. Redistribution, sharing, resale, and commercial use are also prohibited. The owner reserves all commercial rights. Read the full [LICENSE](LICENSE) before using it.
