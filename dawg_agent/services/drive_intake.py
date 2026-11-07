@@ -6,7 +6,7 @@ synced directory; it does not require a Drive API project or paid storage.
 import hashlib
 import re
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -38,8 +38,8 @@ def _daily_slots(database: Session, settings: Settings, now: datetime) -> list[d
     if first >= end:
         return []
 
-    day_start = start.replace(tzinfo=None)
-    day_end = (start + timedelta(days=1)).replace(tzinfo=None)
+    day_start = start.astimezone(timezone.utc).replace(tzinfo=None)
+    day_end = (start + timedelta(days=1)).astimezone(timezone.utc).replace(tzinfo=None)
     published = database.scalar(select(func.count()).select_from(Post).where(
         Post.status == "published", Post.updated_at >= day_start, Post.updated_at < day_end
     )) or 0
@@ -87,7 +87,7 @@ def ingest_drive_images(database: Session, settings: Settings) -> dict:
                 image_path=str(image.resolve()),
                 audio_path=str(settings.audio_source_path) if settings.audio_source_path else None,
                 duration_seconds=settings.default_duration_seconds,
-                scheduled_at=slots[slot_index],
+                scheduled_at=slots[slot_index].astimezone(timezone.utc),
                 metadata={"source": "google_drive_desktop", "source_filename": image.name},
             )
             post = create_post(database, details)
@@ -99,7 +99,7 @@ def ingest_drive_images(database: Session, settings: Settings) -> dict:
             database.commit()
             record_event(database, "post.auto_prepared", post.id,
                          scheduled_at=slots[slot_index].isoformat(), source_filename=image.name)
-            processed_image = processed / image.name
+            processed_image = processed / f"{post_id}{image.suffix.lower()}"
             shutil.move(str(image), processed_image)
             post.image_path = str(processed_image.resolve())
             database.commit()
