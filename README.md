@@ -20,8 +20,9 @@ If you are new to this project, read these in order:
 1. [Start here: run the project](docs/START_HERE.md)
 2. [How the robot works](docs/HOW_IT_WORKS.md)
 3. [How to add a dog post](docs/ADD_A_POST.md)
-4. [What each folder does](docs/PROJECT_MAP.md)
-5. [Fix common problems](docs/TROUBLESHOOTING.md)
+4. [Customize prompts, post types, and audio](docs/CUSTOMIZE_PROMPTS.md)
+5. [What each folder does](docs/PROJECT_MAP.md)
+6. [Fix common problems](docs/TROUBLESHOOTING.md)
 
 ## What can it do today?
 
@@ -30,7 +31,7 @@ If you are new to this project, read these in order:
 | Post queue | Remembers which dog posts we want to make |
 | Video maker | Turns one picture into a 9:16 MP4 video |
 | Video checker | Checks that the video was created correctly |
-| Cloudinary | Uploads the video and gives us a public link |
+| Cloudinary | Uploads videos and gives us public links |
 | Instagram connector | Talks to Instagram's official publishing API |
 | Scheduler | Looks for posts that are ready to publish |
 | API | Lets another program control the robot |
