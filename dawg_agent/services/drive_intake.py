@@ -99,7 +99,10 @@ def ingest_drive_images(database: Session, settings: Settings) -> dict:
             database.commit()
             record_event(database, "post.auto_prepared", post.id,
                          scheduled_at=slots[slot_index].isoformat(), source_filename=image.name)
-            shutil.move(str(image), processed / image.name)
+            processed_image = processed / image.name
+            shutil.move(str(image), processed_image)
+            post.image_path = str(processed_image.resolve())
+            database.commit()
             result["rendered"] += 1
             slot_index += 1
         except Exception as error:
