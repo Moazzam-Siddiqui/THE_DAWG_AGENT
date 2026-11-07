@@ -1,40 +1,34 @@
-# What is inside this project?
-
-A map of the folders and files.
+# Project map
 
 ```text
 THE_DAWG_AGENT/
-|
-|-- dawg_agent/          The robot's Python code
-|   |-- api.py           The control panel (API)
-|   |-- cli.py           Commands you type in the terminal
-|   |-- config.py        Settings the robot reads
-|   |-- db.py            Opens the database
-|   |-- models.py        Describes what a post looks like in the database
-|   |-- schemas.py       Checks information sent to the API
-|   |-- worker.py        Checks the clock and handles due posts
-|   |
-|   |-- services/        Small helpers that do one job each
-|       |-- queue.py       Creates and moves posts through the queue
-|       |-- render.py      Makes and checks MP4 videos
-|       |-- cloudinary.py  Uploads videos to Cloudinary
-|       |-- instagram.py   Talks to Instagram
-|       |-- events.py      Writes down what happened
-|
+|-- dawg_agent/
+|   |-- api.py                 Local control API
+|   |-- cli.py                 dawg morning / worker / run commands
+|   |-- config.py              Local .env settings
+|   |-- db.py                  SQLite connection
+|   |-- models.py              Post and event records
+|   |-- worker.py              Scheduled Instagram publisher
+|   |-- services/
+|       |-- drive_intake.py    Reads Google Drive desktop synced images
+|       |-- instagram.py       Meta resumable upload from local MP4
+|       |-- publishing.py      Publishing window and rate limits
+|       |-- queue.py           Post state transitions
+|       |-- render.py          FFmpeg video rendering and checks
+|       |-- events.py          Local activity log
 |-- assets/
-|   |-- inbox/           Pictures waiting to become videos
-|   |-- rendered/        Videos made by the robot
-|   |-- thumbnails/      Small preview pictures
-|
-|-- config/              Content rules and creative instructions
-|-- docs/                Friendly guides
-|-- examples/            Example post files
-|-- tests/               Small checks for the code
-|-- .env.example         Example settings (copy this to .env)
-|-- pyproject.toml       Python package and dependency list
-|-- README.md            The front page of the project
+|   |-- audio/                 User-supplied campaign sound
+|   |-- rendered/              Finished MP4 files
+|-- drive/                     Default Drive-sync inbox/archive folders
+|-- scripts/
+|   |-- run_morning.bat        Windows launcher
+|   |-- install_task.ps1       Register daily Task Scheduler job
+|-- docs/
+|-- tests/
+|-- .env.example
+|-- pyproject.toml
 ```
 
-## One simple rule
+## Data path
 
-Each Python file should have one main job. If a file starts doing too many different jobs, split it into smaller files.
+ChatGPT image → Google Drive for desktop synced folder → local intake → FFmpeg + supplied audio → SQLite schedule → Meta resumable upload → Instagram.
