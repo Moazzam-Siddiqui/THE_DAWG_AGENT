@@ -21,3 +21,8 @@ assets/thumbnails/*
 *.jpeg
 *.png
 *.webp
+
+# Local Google Drive sync contents and runtime logs
+drive/*
+!drive/README.md
+logs/
