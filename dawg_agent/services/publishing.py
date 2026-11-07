@@ -51,16 +51,7 @@ def publish_block_reason(
     utc_day_start = local_day_start.astimezone(timezone.utc).replace(tzinfo=None)
     utc_day_end = local_day_end.astimezone(timezone.utc).replace(tzinfo=None)
 
-    published_today = database.scalar(
-        select(Post)
-        .where(
-            Post.status == "published",
-            Post.updated_at >= utc_day_start,
-            Post.updated_at < utc_day_end,
-        )
-        .limit(settings.max_posts_per_day + 1)
-    )
-    # Count separately so the query remains portable across supported databases.
+    # Count posts using UTC boundaries derived from the configured local day.
     from sqlalchemy import func
 
     published_count = database.scalar(
