@@ -3,6 +3,7 @@
 Open http://127.0.0.1:8000/docs after starting the API to try these controls.
 """
 import secrets
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -133,6 +134,13 @@ def publish_now(post_id: str, database: Session = Depends(get_database)):
 
     settings = get_settings()
     post = find_post_or_error(database, post_id)
+    if post.scheduled_at is None:
+        raise HTTPException(status_code=409, detail="This post has no scheduled time.")
+    scheduled_at = post.scheduled_at
+    if scheduled_at.tzinfo is None:
+        scheduled_at = scheduled_at.replace(tzinfo=timezone.utc)
+    if scheduled_at > datetime.now(timezone.utc):
+        raise HTTPException(status_code=409, detail="This post is not due for publishing.")
     block_reason = publish_block_reason(database, post, settings)
     if block_reason:
         status_code = 403 if not settings.publish_enabled else 409
