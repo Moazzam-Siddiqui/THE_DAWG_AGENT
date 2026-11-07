@@ -1,102 +1,54 @@
 # Troubleshooting
 
-Start with the exact error message. Most setup problems come from the terminal using the wrong Python environment, FFmpeg not being on PATH, or running a command outside the project folder.
+## 1. Python or the `dawg` command is not found
 
-## 1. Windows says `python`, `py`, or `pip` is not recognized
-
-- Reinstall Python 3.11+ from [python.org](https://www.python.org/downloads/).
-- Tick **Add Python to PATH** during installation.
-- Close and reopen PowerShell.
-- Check with `py --version` and `python --version`.
-- Prefer `python -m pip` over bare `pip` so packages install into the Python you selected.
-
-## 2. PowerShell says script execution is disabled
-
-Run this in the current PowerShell window:
+Activate the project environment and install the package:
 
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
-```
-
-This changes the policy only for that terminal process. Or use Command Prompt and run `.venv\Scripts\activate.bat`.
-
-## 3. `ffmpeg` or `ffprobe` is not recognized
-
-Installing Python dependencies does not install FFmpeg.
-
-On Windows, install it with:
-
-```powershell
-winget install --id Gyan.FFmpeg.Shared --exact
-```
-
-Close and reopen PowerShell, then verify:
-
-```powershell
-where.exe ffmpeg
-where.exe ffprobe
-ffmpeg -version
-ffprobe -version
-```
-
-If `where.exe` finds nothing, add the folder containing `ffmpeg.exe` and `ffprobe.exe` (usually its `bin` folder) to your Windows user PATH. See [Start here — Install FFmpeg](START_HERE.md#2-install-ffmpeg-do-not-skip-this).
-
-On macOS use `brew install ffmpeg`. On Ubuntu/Debian use `sudo apt update && sudo apt install -y ffmpeg`.
-
-## 4. `No module named dawg_agent` or `dawg` is not recognized
-
-Make sure:
-1. Your terminal is in the repository root (the folder containing `pyproject.toml`).
-2. The virtual environment is active; the prompt should show `(.venv)`.
-3. You installed the project with:
-
-```bash
 python -m pip install -e ".[dev]"
+dawg --help
 ```
 
-If you opened a new terminal, activate the environment again before running project commands.
+## 2. FFmpeg or FFprobe is not found
 
-## 5. `No such file or directory` when rendering
+Install FFmpeg, reopen PowerShell, then run `ffmpeg -version` and `ffprobe -version`. The build must include libx264.
 
-- Confirm the image exists.
-- Check the spelling and file extension.
-- Use a path relative to the repository root, such as `assets/inbox/my-dog.jpg`.
-- Make sure you run the command from the repository root.
-- Confirm the image is a valid JPG or PNG that Pillow can open.
+## 3. Drive images are not detected
 
-## 6. `The post ID is already being used`
+- Confirm Google Drive for desktop is running and the folder is synced locally.
+- Confirm `DRIVE_INBOX_DIR` points to the actual local synced folder in `.env`.
+- Supported image formats are JPG, JPEG, PNG and WebP.
+- Files without a daily publishing slot remain in the incoming folder.
 
-The database already contains that ID. Choose a new unique `id` in your JSON file. For a local preview, the CLI does not need to create a queue record, but the ID still determines the output MP4 filename.
+## 4. Image processing fails because audio is missing
 
-## 7. The video has no sound
+Set `AUDIO_SOURCE_PATH` to the exact local campaign audio file. With `AUDIO_REQUIRED=true`, the agent intentionally refuses to render a silent Reel.
 
-- `"audio_path": null` deliberately creates a silent video.
-- If you supplied a path, confirm that the audio file exists at that exact path.
-- The current renderer uses one audio file. It does not mix voiceover, music, and sound effects as separate tracks.
-- Only use audio you own or have permission to use.
+## 5. A source image is moved to the failed folder
 
-## 8. FFmpeg reports an encoder or codec error
+Check the terminal output and the event log in the local SQLite database. Common causes are a missing/invalid image, missing audio, or FFmpeg/codec errors. Correct the problem and move the image back into the incoming folder for another attempt.
 
-Check that the FFmpeg installation includes the H.264 encoder used by this project:
+## 6. Instagram publishing fails
 
-```bash
-ffmpeg -hide_banner -encoders
-```
+The local-file resumable upload requires a Meta app configured for Facebook Login for Business and the appropriate Instagram publishing permissions. Verify:
 
-Look for `libx264`. If it is missing, install a full FFmpeg build that includes libx264, then restart your terminal and try again.
+- Instagram is a professional account and correctly linked to the required Facebook Page.
+- The Meta app has the required publishing permissions and access token.
+- `INSTAGRAM_USER_ID` and `META_ACCESS_TOKEN` are correct.
+- `PUBLISH_ENABLED=true` is set only after configuration is complete.
+- The MP4 is valid and the computer is online.
 
-## 9. The API does not start
+The repository has not been live-tested against your Instagram account. Read the Meta API error carefully; never share access tokens.
 
-- Confirm the virtual environment is active and dependencies are installed.
-- Check whether another program is already using port 8000.
-- Run `uvicorn dawg_agent.api:app --reload` from the repository root.
-- Read the first traceback in the terminal; do not share secrets from `.env`.
+## 7. Windows Task Scheduler does not start the agent
 
-## 10. Instagram publishing does not work
+Keep the user session signed in, the PC awake and connected to the internet. Ensure Google Drive for desktop has completed sync. Inspect `logs\morning.log`. Only one instance of the worker should run.
 
-A local video preview does not prove Instagram publishing is configured. Check the professional account, linked Facebook Page, Meta app permissions, token validity, Cloudinary public URL, and Meta API response. Keep `PUBLISH_ENABLED=false` until you have deliberately tested the complete flow. Never paste access tokens into GitHub issues or chat.
+## 8. The same image is processed twice
+
+The intake uses a content hash as the post ID. If the source was moved or renamed, identical image bytes still map to the same post. Check the local database before deleting failed records.
 
 ## Still stuck?
 
-Share the complete terminal error and the command you ran. Remove access tokens, API keys, passwords, and private URLs first. Include your operating system and the output of `python --version`, `ffmpeg -version`, and `ffprobe -version`.
+Share the terminal error and the command you ran. Remove tokens, passwords and private URLs first.
