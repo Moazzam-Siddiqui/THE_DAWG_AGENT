@@ -14,6 +14,7 @@ from dawg_agent.db import SessionLocal, init_db
 from dawg_agent.models import Event, Post
 from dawg_agent.schemas import EventRead, PostCreate, PostRead, ScheduleRequest
 from dawg_agent.services.events import record_event
+from dawg_agent.services.publishing import publish_block_reason
 from dawg_agent.services.queue import (
     QueueError,
     approve_post,
@@ -49,7 +50,7 @@ def get_database():
 
 
 def check_api_key(x_api_key: str | None = Header(default=None)):
-    """Check the optional API password."""
+    """Check the API password when one has been configured."""
     saved_key = get_settings().api_key
     if saved_key and not secrets.compare_digest(x_api_key or "", saved_key):
         raise HTTPException(status_code=401, detail="The API key is not correct.")
@@ -138,25 +139,27 @@ def schedule(post_id: str, details: ScheduleRequest,
 @app.post("/posts/{post_id}/publish", response_model=PostRead,
           dependencies=[Depends(check_api_key)])
 def publish_now(post_id: str, database: Session = Depends(get_database)):
-    """Publish now. This only works when the publishing safety switch is ON."""
+    """Publish now, but never bypass the worker's publishing safety rules."""
     from dawg_agent.services.instagram import publish_reel
 
     settings = get_settings()
-    if not settings.publish_enabled:
-        raise HTTPException(status_code=403, detail="Publishing is switched OFF.")
     post = find_post_or_error(database, post_id)
-    if not post.approved or not post.media_url:
-        raise HTTPException(status_code=409, detail="Approve and upload this post first.")
+    block_reason = publish_block_reason(database, post, settings)
+    if block_reason:
+        status_code = 403 if not settings.publish_enabled else 409
+        raise HTTPException(status_code=status_code, detail=block_reason)
 
     try:
         instagram_id = publish_reel(post.media_url, post.caption, settings)
         post.published_media_id = instagram_id
         post.status = "published"
+        post.last_error = None
         database.commit()
         record_event(database, "post.published", post.id, instagram_media_id=instagram_id)
         database.refresh(post)
         return post
     except RuntimeError as error:
+        database.rollback()
         raise HTTPException(status_code=502, detail=str(error)) from error
 
 
