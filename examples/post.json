@@ -1,0 +1,15 @@
+{
+  "id": "sample-border-collie-001",
+  "caption": "POV: the dog heard the GPU budget. #dogreels #WhatDaDawgDoing",
+  "hashtags": ["dogreels", "WhatDaDawgDoing"],
+  "image_path": "assets/inbox/sample-dog.jpg",
+  "audio_path": null,
+  "duration_seconds": 9,
+  "scheduled_at": null,
+  "approved": false,
+  "metadata": {
+    "concept": "A border collie stares dramatically at a tiny server rack prop",
+    "content_type": "dog_comedy",
+    "satire": false
+  }
+}
