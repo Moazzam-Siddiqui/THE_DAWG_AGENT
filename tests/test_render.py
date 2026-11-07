@@ -41,7 +41,7 @@ def test_audio_can_be_optional_for_a_silent_preview(tmp_path, monkeypatch):
         image_path=image_path,
         output_path=tmp_path / "output.mp4",
         duration=9,
-        settings=Settings(),
+        settings=Settings(audio_required=False),
         audio_path=None,
     )
 
