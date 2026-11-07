@@ -1,20 +1,24 @@
 # How to add a dog post
 
-A post is one picture, one caption, and the settings needed to make a video.
+This guide explains how to prepare a JSON post file and render a local MP4 preview.
 
-## Step 1: Put the picture in the inbox
+> A local preview is not an Instagram post. It does not upload, schedule, or publish anything.
 
-Put your dog picture in:
+## 1. Add your image
 
-`assets/inbox/`
+Put a valid JPG or PNG in:
 
-Example:
+```text
+assets/inbox/
+```
 
-`assets/inbox/fluffy.jpg`
+Example: `assets/inbox/fluffy.jpg`.
 
-## Step 2: Make a small JSON note
+Run commands from the repository root so relative paths resolve correctly.
 
-Create a file named `fluffy.json`:
+## 2. Create a post JSON file
+
+Create `fluffy.json` in the repository root:
 
 ```json
 {
@@ -31,29 +35,74 @@ Create a file named `fluffy.json`:
 }
 ```
 
-What do these words mean?
+### What each field means
 
-- `id`: A unique name. Do not reuse it for another post.
-- `caption`: The words shown with the Reel.
-- `hashtags`: A list of hashtags, without the # symbol.
-- `image_path`: Where the picture is saved.
-- `audio_path`: Where an audio file is saved. Use null for no audio.
-- `duration_seconds`: How long the video should be. Use 6 to 12.
-- `scheduled_at`: The date and time to publish. Leave null while making a preview.
-- `metadata`: Extra notes. The robot does not need these notes to render the video.
+| Field | Meaning |
+|---|---|
+| `id` | Unique identifier; also used for the output filename |
+| `caption` | Caption text |
+| `hashtags` | Hashtags without the `#` symbol |
+| `image_path` | Input image path, relative to the project root or an absolute path |
+| `audio_path` | Audio file path, or `null` for silent output |
+| `duration_seconds` | Video duration; between 6 and 12 seconds |
+| `scheduled_at` | Optional timezone-aware date/time for queue scheduling; leave null for a preview |
+| `metadata` | Extra notes saved with a queued post; not used by the current renderer |
 
-## Step 3: Make the video
+The current renderer uses one audio file. It does not yet mix multiple tracks or select sounds automatically.
 
-Run:
+## 3. Render a local preview
+
+Activate your virtual environment, make sure FFmpeg is installed, and run:
 
 ```bash
 dawg render fluffy.json
 ```
 
-The video will be saved in `assets/rendered/fluffy-001.mp4`.
+Expected output location:
 
-## Step 4: Watch it
+```text
+assets/rendered/fluffy-001.mp4
+```
 
-Open the MP4 file and make sure it looks right.
+The CLI preview renders directly from the JSON file. It does not create a database queue entry, upload the file, or approve/publish anything.
 
-This command makes a local preview. It does not upload or publish the post.
+## 4. Check the result
+
+Open the MP4 and inspect:
+- The image is framed correctly in vertical 9:16.
+- The dog is visible and not cropped badly.
+- The duration is what you expected.
+- Audio is present only if you supplied a valid audio file.
+- The video plays from beginning to end.
+
+You can inspect the file's technical details with:
+
+```bash
+ffprobe -hide_banner assets/rendered/fluffy-001.mp4
+```
+
+## 5. Importing a post into the API queue
+
+The CLI also has an import command:
+
+```bash
+dawg import-post fluffy.json
+```
+
+This stores a draft in the local database. It does not render, upload, or publish it. The API exposes approval, rendering, uploading, and scheduling endpoints; see [the API docs](http://127.0.0.1:8000/docs) after starting the API.
+
+## 6. Change the sound
+
+Put the sound file in your project, for example `assets/audio/fluffy.mp3`, and change:
+
+```json
+"audio_path": "assets/audio/fluffy.mp3"
+```
+
+For a silent video:
+
+```json
+"audio_path": null
+```
+
+Use only audio you own or have permission to use. See [Customize prompts, post types, and audio](CUSTOMIZE_PROMPTS.md) for creative guidance and current feature limitations.
