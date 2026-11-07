@@ -60,7 +60,7 @@ def schedule_post(database: Session, post: Post, publish_time: datetime) -> Post
         raise QueueError("Include a timezone in the scheduled date and time.")
     if publish_time <= datetime.now(timezone.utc):
         raise QueueError("Choose a time in the future.")
-    post.scheduled_at = publish_time
+    post.scheduled_at = publish_time.astimezone(timezone.utc)
     post.status = "scheduled"
     database.commit()
     database.refresh(post)
