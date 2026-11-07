@@ -1,1 +1,1 @@
-"""External and media services."""
+"""Media and integration services."""
